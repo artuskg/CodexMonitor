@@ -89,6 +89,14 @@ function asString(value: unknown) {
   return typeof value === "string" ? value : value ? String(value) : "";
 }
 
+function normalizeStringList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => asString(entry)).filter(Boolean);
+  }
+  const single = asString(value);
+  return single ? [single] : [];
+}
+
 function extractRpcErrorMessage(response: unknown) {
   if (!response || typeof response !== "object") {
     return null;
@@ -448,6 +456,59 @@ export function useThreads({
     }
   }, [onMessageActivity]);
 
+  const updateThreadParent = useCallback(
+    (workspaceId: string, parentId: string, childIds: string[]) => {
+      if (!parentId || childIds.length === 0) {
+        return;
+      }
+      childIds.forEach((childId) => {
+        if (!childId || childId === parentId) {
+          return;
+        }
+        dispatch({ type: "ensureThread", workspaceId, threadId: childId });
+        dispatch({ type: "setThreadParent", threadId: childId, parentId });
+      });
+    },
+    [],
+  );
+
+  const applyCollabThreadLinks = useCallback(
+    (workspaceId: string, fallbackThreadId: string, item: Record<string, unknown>) => {
+      const itemType = asString(item?.type ?? "");
+      if (itemType !== "collabToolCall" && itemType !== "collabAgentToolCall") {
+        return;
+      }
+      const sender = asString(item.senderThreadId ?? item.sender_thread_id ?? "");
+      const parentId = sender || fallbackThreadId;
+      if (!parentId) {
+        return;
+      }
+      const receivers = [
+        ...normalizeStringList(item.receiverThreadId ?? item.receiver_thread_id),
+        ...normalizeStringList(item.receiverThreadIds ?? item.receiver_thread_ids),
+        ...normalizeStringList(item.newThreadId ?? item.new_thread_id),
+      ];
+      updateThreadParent(workspaceId, parentId, receivers);
+    },
+    [updateThreadParent],
+  );
+
+  const applyCollabThreadLinksFromThread = useCallback(
+    (workspaceId: string, fallbackThreadId: string, thread: Record<string, unknown>) => {
+      const turns = Array.isArray(thread.turns) ? thread.turns : [];
+      turns.forEach((turn) => {
+        const turnRecord = turn as Record<string, unknown>;
+        const turnItems = Array.isArray(turnRecord.items)
+          ? (turnRecord.items as Record<string, unknown>[])
+          : [];
+        turnItems.forEach((item) => {
+          applyCollabThreadLinks(workspaceId, fallbackThreadId, item);
+        });
+      });
+    },
+    [applyCollabThreadLinks],
+  );
+
   const handleItemUpdate = useCallback(
     (
       workspaceId: string,
@@ -459,6 +520,7 @@ export function useThreads({
       if (shouldMarkProcessing) {
         markProcessing(threadId, true);
       }
+      applyCollabThreadLinks(workspaceId, threadId, item);
       const itemType = asString(item?.type ?? "");
       if (itemType === "enteredReviewMode") {
         dispatch({ type: "markReviewing", threadId, isReviewing: true });
@@ -472,7 +534,7 @@ export function useThreads({
       }
       safeMessageActivity();
     },
-    [markProcessing, safeMessageActivity],
+    [applyCollabThreadLinks, markProcessing, safeMessageActivity],
   );
 
   const handleToolOutputDelta = useCallback(
@@ -771,6 +833,7 @@ export function useThreads({
           | Record<string, unknown>
           | null;
         if (thread) {
+          applyCollabThreadLinksFromThread(workspaceId, threadId, thread);
           const items = buildItemsFromThread(thread);
           const localItems = state.itemsByThread[threadId] ?? [];
           const mergedItems =
@@ -823,7 +886,7 @@ export function useThreads({
         return null;
       }
     },
-    [onDebug, state.itemsByThread],
+    [applyCollabThreadLinksFromThread, onDebug, state.itemsByThread],
   );
 
   const listThreadsForWorkspace = useCallback(
@@ -1424,6 +1487,7 @@ export function useThreads({
     activeItems,
     approvals: state.approvals,
     threadsByWorkspace: state.threadsByWorkspace,
+    threadParentById: state.threadParentById,
     threadStatusById: state.threadStatusById,
     threadListLoadingByWorkspace: state.threadListLoadingByWorkspace,
     threadListPagingByWorkspace: state.threadListPagingByWorkspace,

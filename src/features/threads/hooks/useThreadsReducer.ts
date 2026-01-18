@@ -20,6 +20,7 @@ export type ThreadState = {
   activeThreadIdByWorkspace: Record<string, string | null>;
   itemsByThread: Record<string, ConversationItem[]>;
   threadsByWorkspace: Record<string, ThreadSummary[]>;
+  threadParentById: Record<string, string>;
   threadStatusById: Record<string, ThreadActivityStatus>;
   threadListLoadingByWorkspace: Record<string, boolean>;
   threadListPagingByWorkspace: Record<string, boolean>;
@@ -36,6 +37,7 @@ export type ThreadAction =
   | { type: "setActiveThreadId"; workspaceId: string; threadId: string | null }
   | { type: "ensureThread"; workspaceId: string; threadId: string }
   | { type: "removeThread"; workspaceId: string; threadId: string }
+  | { type: "setThreadParent"; threadId: string; parentId: string }
   | {
       type: "markProcessing";
       threadId: string;
@@ -105,6 +107,7 @@ export const initialState: ThreadState = {
   activeThreadIdByWorkspace: {},
   itemsByThread: emptyItems,
   threadsByWorkspace: {},
+  threadParentById: {},
   threadStatusById: {},
   threadListLoadingByWorkspace: {},
   threadListPagingByWorkspace: {},
@@ -213,6 +216,7 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
       const { [action.threadId]: __, ...restStatus } = state.threadStatusById;
       const { [action.threadId]: ___, ...restTurns } = state.activeTurnIdByThread;
       const { [action.threadId]: ____, ...restPlans } = state.planByThread;
+      const { [action.threadId]: _____, ...restParents } = state.threadParentById;
       return {
         ...state,
         threadsByWorkspace: {
@@ -223,9 +227,25 @@ export function threadReducer(state: ThreadState, action: ThreadAction): ThreadS
         threadStatusById: restStatus,
         activeTurnIdByThread: restTurns,
         planByThread: restPlans,
+        threadParentById: restParents,
         activeThreadIdByWorkspace: {
           ...state.activeThreadIdByWorkspace,
           [action.workspaceId]: nextActive,
+        },
+      };
+    }
+    case "setThreadParent": {
+      if (!action.parentId || action.parentId === action.threadId) {
+        return state;
+      }
+      if (state.threadParentById[action.threadId] === action.parentId) {
+        return state;
+      }
+      return {
+        ...state,
+        threadParentById: {
+          ...state.threadParentById,
+          [action.threadId]: action.parentId,
         },
       };
     }
