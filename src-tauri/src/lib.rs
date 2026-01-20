@@ -46,6 +46,8 @@ pub fn run() {
             let check_updates_item =
                 MenuItemBuilder::with_id("check_for_updates", "Check for Updates...")
                     .build(handle)?;
+            let settings_item =
+                MenuItemBuilder::with_id("file_open_settings", "Settings...").build(handle)?;
             let app_menu = Submenu::with_items(
                 handle,
                 app_name.clone(),
@@ -53,6 +55,7 @@ pub fn run() {
                 &[
                     &about_item,
                     &check_updates_item,
+                    &settings_item,
                     &PredefinedMenuItem::separator(handle)?,
                     &PredefinedMenuItem::services(handle, None)?,
                     &PredefinedMenuItem::separator(handle)?,
@@ -73,8 +76,6 @@ pub fn run() {
                     .build(handle)?;
             let add_workspace_item =
                 MenuItemBuilder::with_id("file_add_workspace", "Add Workspace...").build(handle)?;
-            let settings_item =
-                MenuItemBuilder::with_id("file_open_settings", "Settings...").build(handle)?;
 
             #[cfg(target_os = "linux")]
             let file_menu = {
@@ -91,7 +92,6 @@ pub fn run() {
                         &new_clone_agent_item,
                         &PredefinedMenuItem::separator(handle)?,
                         &add_workspace_item,
-                        &settings_item,
                         &PredefinedMenuItem::separator(handle)?,
                         &close_window_item,
                         &quit_item,
@@ -109,7 +109,6 @@ pub fn run() {
                     &new_clone_agent_item,
                     &PredefinedMenuItem::separator(handle)?,
                     &add_workspace_item,
-                    &settings_item,
                     &PredefinedMenuItem::separator(handle)?,
                     &PredefinedMenuItem::close_window(handle, None)?,
                     #[cfg(not(target_os = "macos"))]
