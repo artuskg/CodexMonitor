@@ -63,6 +63,19 @@ pub fn run() {
                 ],
             )?;
 
+            let new_agent_item =
+                MenuItemBuilder::with_id("file_new_agent", "New Agent").build(handle)?;
+            let new_worktree_agent_item =
+                MenuItemBuilder::with_id("file_new_worktree_agent", "New Worktree Agent")
+                    .build(handle)?;
+            let new_clone_agent_item =
+                MenuItemBuilder::with_id("file_new_clone_agent", "New Clone Agent")
+                    .build(handle)?;
+            let add_workspace_item =
+                MenuItemBuilder::with_id("file_add_workspace", "Add Workspace...").build(handle)?;
+            let settings_item =
+                MenuItemBuilder::with_id("file_open_settings", "Settings...").build(handle)?;
+
             #[cfg(target_os = "linux")]
             let file_menu = {
                 let close_window_item =
@@ -72,7 +85,17 @@ pub fn run() {
                     handle,
                     "File",
                     true,
-                    &[&close_window_item, &quit_item],
+                    &[
+                        &new_agent_item,
+                        &new_worktree_agent_item,
+                        &new_clone_agent_item,
+                        &PredefinedMenuItem::separator(handle)?,
+                        &add_workspace_item,
+                        &settings_item,
+                        &PredefinedMenuItem::separator(handle)?,
+                        &close_window_item,
+                        &quit_item,
+                    ],
                 )?
             };
             #[cfg(not(target_os = "linux"))]
@@ -81,6 +104,13 @@ pub fn run() {
                 "File",
                 true,
                 &[
+                    &new_agent_item,
+                    &new_worktree_agent_item,
+                    &new_clone_agent_item,
+                    &PredefinedMenuItem::separator(handle)?,
+                    &add_workspace_item,
+                    &settings_item,
+                    &PredefinedMenuItem::separator(handle)?,
                     &PredefinedMenuItem::close_window(handle, None)?,
                     #[cfg(not(target_os = "macos"))]
                     &PredefinedMenuItem::quit(handle, None)?,
@@ -193,6 +223,21 @@ pub fn run() {
                 }
                 "check_for_updates" => {
                     let _ = app.emit("updater-check", ());
+                }
+                "file_new_agent" => {
+                    let _ = app.emit("menu-new-agent", ());
+                }
+                "file_new_worktree_agent" => {
+                    let _ = app.emit("menu-new-worktree-agent", ());
+                }
+                "file_new_clone_agent" => {
+                    let _ = app.emit("menu-new-clone-agent", ());
+                }
+                "file_add_workspace" => {
+                    let _ = app.emit("menu-add-workspace", ());
+                }
+                "file_open_settings" => {
+                    let _ = app.emit("menu-open-settings", ());
                 }
                 "file_close_window" | "window_close" => {
                     if let Some(window) = app.get_webview_window("main") {
