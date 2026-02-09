@@ -11,6 +11,7 @@ type UsePullRequestComposerOptions = {
   activeWorkspace: WorkspaceInfo | null;
   selectedPullRequest: GitHubPullRequest | null;
   gitPullRequestDiffs: GitHubPullRequestDiff[];
+  gitPullRequestPromptTemplate: string;
   filePanelMode: "git" | "files" | "prompts";
   gitPanelMode: "diff" | "log" | "issues" | "prs";
   centerMode: "chat" | "diff";
@@ -40,6 +41,7 @@ export function usePullRequestComposer({
   activeWorkspace,
   selectedPullRequest,
   gitPullRequestDiffs,
+  gitPullRequestPromptTemplate,
   filePanelMode,
   gitPanelMode,
   centerMode,
@@ -120,6 +122,7 @@ export function usePullRequestComposer({
         selectedPullRequest,
         gitPullRequestDiffs,
         trimmed,
+        gitPullRequestPromptTemplate,
       );
       const threadId = await startThreadForWorkspace(activeWorkspace.id, {
         activate: false,
@@ -135,6 +138,7 @@ export function usePullRequestComposer({
       clearActiveImages,
       connectWorkspace,
       gitPullRequestDiffs,
+      gitPullRequestPromptTemplate,
       handleSend,
       selectedPullRequest,
       sendUserMessageToThread,

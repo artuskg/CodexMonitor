@@ -592,6 +592,11 @@ pub(crate) struct AppSettings {
     )]
     pub(crate) git_diff_ignore_whitespace_changes: bool,
     #[serde(
+        default = "default_git_pull_request_prompt",
+        rename = "gitPullRequestPrompt"
+    )]
+    pub(crate) git_pull_request_prompt: String,
+    #[serde(
         default = "default_system_notifications_enabled",
         rename = "systemNotificationsEnabled"
     )]
@@ -924,6 +929,20 @@ fn default_git_diff_ignore_whitespace_changes() -> bool {
     false
 }
 
+fn default_git_pull_request_prompt() -> String {
+    [
+        "You are reviewing a GitHub pull request.",
+        "PR: #{{number}} {{title}}",
+        "URL: {{url}}",
+        "Author: @{{author}}",
+        "Branches: {{baseRef}} <- {{headRef}}",
+        "Updated: {{updatedAt}}{{draftState}}{{descriptionSection}}",
+        "",
+        "Diff: {{diffSummary}}{{questionSection}}",
+    ]
+    .join("\n")
+}
+
 fn default_experimental_collab_enabled() -> bool {
     false
 }
@@ -1169,6 +1188,7 @@ impl Default for AppSettings {
             system_notifications_enabled: true,
             preload_git_diffs: default_preload_git_diffs(),
             git_diff_ignore_whitespace_changes: default_git_diff_ignore_whitespace_changes(),
+            git_pull_request_prompt: default_git_pull_request_prompt(),
             experimental_collab_enabled: false,
             collaboration_modes_enabled: true,
             steer_enabled: true,
@@ -1329,6 +1349,10 @@ mod tests {
         assert!(settings.system_notifications_enabled);
         assert!(settings.preload_git_diffs);
         assert!(!settings.git_diff_ignore_whitespace_changes);
+        assert_eq!(
+            settings.git_pull_request_prompt,
+            default_git_pull_request_prompt()
+        );
         assert!(settings.collaboration_modes_enabled);
         assert!(settings.steer_enabled);
         assert!(settings.unified_exec_enabled);

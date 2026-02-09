@@ -17,6 +17,7 @@ import {
 import { normalizeOpenAppTargets } from "../../app/utils/openApp";
 import { getDefaultInterruptShortcut, isMacPlatform } from "../../../utils/shortcuts";
 import { isMobilePlatform } from "../../../utils/platformPaths";
+import { DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE } from "../../../utils/pullRequestPrompt";
 
 const allowedThemes = new Set(["system", "light", "dark", "dim"]);
 const allowedPersonality = new Set(["friendly", "pragmatic"]);
@@ -72,6 +73,7 @@ function buildDefaultSettings(): AppSettings {
     systemNotificationsEnabled: true,
     preloadGitDiffs: true,
     gitDiffIgnoreWhitespaceChanges: false,
+    gitPullRequestPrompt: DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE,
     experimentalCollabEnabled: false,
     collaborationModesEnabled: true,
     steerEnabled: true,
@@ -133,6 +135,9 @@ function normalizeAppSettings(settings: AppSettings): AppSettings {
       DEFAULT_CODE_FONT_FAMILY,
     ),
     codeFontSize: clampCodeFontSize(settings.codeFontSize),
+    gitPullRequestPrompt: settings.gitPullRequestPrompt?.trim()
+      ? settings.gitPullRequestPrompt
+      : DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE,
     personality: allowedPersonality.has(settings.personality)
       ? settings.personality
       : "friendly",

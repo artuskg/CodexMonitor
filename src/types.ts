@@ -190,6 +190,7 @@ export type AppSettings = {
   systemNotificationsEnabled: boolean;
   preloadGitDiffs: boolean;
   gitDiffIgnoreWhitespaceChanges: boolean;
+  gitPullRequestPrompt: string;
   experimentalCollabEnabled: boolean;
   collaborationModesEnabled: boolean;
   steerEnabled: boolean;

@@ -54,6 +54,7 @@ const makeOptions = (overrides: Partial<Parameters<typeof usePullRequestComposer
   activeWorkspace: connectedWorkspace,
   selectedPullRequest: null,
   gitPullRequestDiffs: diffs,
+  gitPullRequestPromptTemplate: "Default template",
   filePanelMode: "git" as const,
   gitPanelMode: "prs" as const,
   centerMode: "diff" as const,
@@ -141,6 +142,7 @@ describe("usePullRequestComposer", () => {
       pullRequest,
       diffs,
       "Question?",
+      "Default template",
     );
     expect(options.startThreadForWorkspace).toHaveBeenCalledWith(
       disconnectedWorkspace.id,
@@ -193,6 +195,7 @@ describe("usePullRequestComposer", () => {
       pullRequest,
       diffs,
       "/src-tauri/something",
+      "Default template",
     );
     expect(options.startThreadForWorkspace).toHaveBeenCalledWith(
       connectedWorkspace.id,

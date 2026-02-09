@@ -36,6 +36,7 @@ import {
   clampCodeFontSize,
   normalizeFontFamily,
 } from "../../../utils/fonts";
+import { DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE } from "../../../utils/pullRequestPrompt";
 import { useGlobalAgentsMd } from "../hooks/useGlobalAgentsMd";
 import { useGlobalCodexConfigToml } from "../hooks/useGlobalCodexConfigToml";
 import { useSettingsOpenAppDrafts } from "../hooks/useSettingsOpenAppDrafts";
@@ -208,6 +209,10 @@ export function SettingsView({
   );
   const [orbitAccessClientSecretRefDraft, setOrbitAccessClientSecretRefDraft] =
     useState(appSettings.orbitAccessClientSecretRef ?? "");
+  const [gitPullRequestPromptDraft, setGitPullRequestPromptDraft] = useState(
+    appSettings.gitPullRequestPrompt,
+  );
+  const [gitPullRequestPromptSaving, setGitPullRequestPromptSaving] = useState(false);
   const [orbitStatusText, setOrbitStatusText] = useState<string | null>(null);
   const [orbitAuthCode, setOrbitAuthCode] = useState<string | null>(null);
   const [orbitVerificationUrl, setOrbitVerificationUrl] = useState<string | null>(
@@ -420,6 +425,10 @@ export function SettingsView({
   }, [appSettings.orbitAccessClientSecretRef]);
 
   useEffect(() => {
+    setGitPullRequestPromptDraft(appSettings.gitPullRequestPrompt);
+  }, [appSettings.gitPullRequestPrompt]);
+
+  useEffect(() => {
     setScaleDraft(`${Math.round(clampUiScale(appSettings.uiScale) * 100)}%`);
   }, [appSettings.uiScale]);
 
@@ -528,6 +537,8 @@ export function SettingsView({
   const codexDirty =
     nextCodexBin !== (appSettings.codexBin ?? null) ||
     nextCodexArgs !== (appSettings.codexArgs ?? null);
+  const gitPullRequestPromptDirty =
+    gitPullRequestPromptDraft !== appSettings.gitPullRequestPrompt;
 
   const trimmedScale = scaleDraft.trim();
   const parsedPercent = trimmedScale
@@ -547,6 +558,43 @@ export function SettingsView({
       setIsSavingSettings(false);
     }
   };
+
+  const handleSaveGitPullRequestPrompt = useCallback(async () => {
+    if (!gitPullRequestPromptDirty) {
+      return;
+    }
+    const nextValue = gitPullRequestPromptDraft.trim()
+      ? gitPullRequestPromptDraft
+      : DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE;
+    setGitPullRequestPromptSaving(true);
+    setGitPullRequestPromptDraft(nextValue);
+    try {
+      await onUpdateAppSettings({
+        ...appSettings,
+        gitPullRequestPrompt: nextValue,
+      });
+    } finally {
+      setGitPullRequestPromptSaving(false);
+    }
+  }, [
+    appSettings,
+    gitPullRequestPromptDirty,
+    gitPullRequestPromptDraft,
+    onUpdateAppSettings,
+  ]);
+
+  const handleResetGitPullRequestPrompt = useCallback(async () => {
+    setGitPullRequestPromptSaving(true);
+    setGitPullRequestPromptDraft(DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE);
+    try {
+      await onUpdateAppSettings({
+        ...appSettings,
+        gitPullRequestPrompt: DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE,
+      });
+    } finally {
+      setGitPullRequestPromptSaving(false);
+    }
+  }, [appSettings, onUpdateAppSettings]);
 
   const updateRemoteBackendSettings = useCallback(
     async ({
@@ -1431,6 +1479,12 @@ export function SettingsView({
             <SettingsGitSection
               appSettings={appSettings}
               onUpdateAppSettings={onUpdateAppSettings}
+              gitPullRequestPromptDraft={gitPullRequestPromptDraft}
+              gitPullRequestPromptDirty={gitPullRequestPromptDirty}
+              gitPullRequestPromptSaving={gitPullRequestPromptSaving}
+              onSetGitPullRequestPromptDraft={setGitPullRequestPromptDraft}
+              onSaveGitPullRequestPrompt={handleSaveGitPullRequestPrompt}
+              onResetGitPullRequestPrompt={handleResetGitPullRequestPrompt}
             />
           )}
           {activeSection === "server" && (

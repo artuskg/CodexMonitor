@@ -1543,6 +1543,7 @@ function MainApp() {
     activeWorkspace,
     selectedPullRequest,
     gitPullRequestDiffs,
+    gitPullRequestPromptTemplate: appSettings.gitPullRequestPrompt,
     filePanelMode,
     gitPanelMode,
     centerMode,

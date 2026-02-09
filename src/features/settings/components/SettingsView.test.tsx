@@ -11,6 +11,7 @@ import {
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { AppSettings, WorkspaceInfo } from "../../../types";
+import { DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE } from "../../../utils/pullRequestPrompt";
 import { SettingsView } from "./SettingsView";
 
 vi.mock("@tauri-apps/plugin-dialog", () => ({
@@ -68,6 +69,7 @@ const baseSettings: AppSettings = {
   systemNotificationsEnabled: true,
   preloadGitDiffs: true,
   gitDiffIgnoreWhitespaceChanges: false,
+  gitPullRequestPrompt: DEFAULT_PULL_REQUEST_PROMPT_TEMPLATE,
   experimentalCollabEnabled: false,
   collaborationModesEnabled: true,
   steerEnabled: true,
