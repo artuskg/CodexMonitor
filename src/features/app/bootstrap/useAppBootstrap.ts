@@ -4,7 +4,6 @@ import { useAppSettingsController } from "@app/hooks/useAppSettingsController";
 import { useCodeCssVars } from "@app/hooks/useCodeCssVars";
 import { useDictationController } from "@app/hooks/useDictationController";
 import { useLiquidGlassEffect } from "@app/hooks/useLiquidGlassEffect";
-import { useSettingsModalState } from "@app/hooks/useSettingsModalState";
 
 export function useAppBootstrap() {
   const appSettingsState = useAppSettingsController();
@@ -12,7 +11,6 @@ export function useAppBootstrap() {
 
   const dictationState = useDictationController(appSettingsState.appSettings);
   const debugState = useDebugLog();
-  const settingsModalState = useSettingsModalState();
 
   const shouldReduceTransparency =
     appSettingsState.reduceTransparency || isMobilePlatform();
@@ -26,7 +24,6 @@ export function useAppBootstrap() {
     ...appSettingsState,
     ...dictationState,
     ...debugState,
-    ...settingsModalState,
     shouldReduceTransparency,
   };
 }
