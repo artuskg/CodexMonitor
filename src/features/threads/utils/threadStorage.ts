@@ -1,4 +1,4 @@
-import type { AccessMode } from "../../../types";
+import type { AccessMode } from "@/types";
 
 export const STORAGE_KEY_THREAD_ACTIVITY = "codexmonitor.threadLastUserActivity";
 export const STORAGE_KEY_PINNED_THREADS = "codexmonitor.pinnedThreads";

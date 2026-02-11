@@ -1,4 +1,4 @@
-import type { AccessMode } from "../../../types";
+import type { AccessMode } from "@/types";
 import type { ThreadCodexParams } from "./threadStorage";
 import { makeThreadCodexParamsKey } from "./threadStorage";
 

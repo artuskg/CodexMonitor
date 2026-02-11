@@ -5,7 +5,7 @@ import type {
   TurnPlan,
   TurnPlanStep,
   TurnPlanStepStatus,
-} from "../../../types";
+} from "@/types";
 
 export function asString(value: unknown) {
   return typeof value === "string" ? value : value ? String(value) : "";
