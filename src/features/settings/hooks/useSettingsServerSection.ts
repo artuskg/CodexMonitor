@@ -374,7 +374,7 @@ export const useSettingsServerSection = ({
       (entry) => entry.id !== active.id && entry.name.trim().toLowerCase() === nextName.toLowerCase(),
     );
     if (duplicate) {
-      const message = `A remote named \"${nextName}\" already exists.`;
+      const message = `A remote named "${nextName}" already exists.`;
       setRemoteNameError(message);
       setRemoteStatus(message, true);
       return;
@@ -382,7 +382,7 @@ export const useSettingsServerSection = ({
     setRemoteNameError(null);
     setRemoteNameDraft(nextName);
     await updateActiveRemoteBackend({ name: nextName });
-    setRemoteStatus(`Saved remote name \"${nextName}\".`);
+    setRemoteStatus(`Saved remote name "${nextName}".`);
   };
 
   const handleCommitRemoteHost = async () => {
@@ -404,7 +404,7 @@ export const useSettingsServerSection = ({
       return;
     }
     await persistRemoteBackends(candidates, id);
-    setRemoteStatus(`Active remote set to \"${selected.name}\".`);
+    setRemoteStatus(`Active remote set to "${selected.name}".`);
   };
 
   const handleAddRemoteBackend = async () => {
@@ -421,7 +421,7 @@ export const useSettingsServerSection = ({
       lastConnectedAtMs: null,
     };
     await persistRemoteBackends([...existingBackends, nextRemote], nextId);
-    setRemoteStatus(`Added \"${nextRemote.name}\".`);
+    setRemoteStatus(`Added "${nextRemote.name}".`);
   };
 
   const handleSetRemoteNameDraft: Dispatch<SetStateAction<string>> = (value) => {
@@ -451,7 +451,7 @@ export const useSettingsServerSection = ({
     nextBackends[index] = nextBackends[targetIndex];
     nextBackends[targetIndex] = entry;
     await persistRemoteBackends(nextBackends);
-    setRemoteStatus(`Moved \"${entry.name}\" ${direction}.`);
+    setRemoteStatus(`Moved "${entry.name}" ${direction}.`);
   };
 
   const handleDeleteRemoteBackend = async (id: string) => {
@@ -472,7 +472,7 @@ export const useSettingsServerSection = ({
         ? remaining[Math.min(index, remaining.length - 1)]?.id ?? remaining[0]?.id ?? null
         : latestSettings.activeRemoteBackendId;
     await persistRemoteBackends(remaining, nextActiveId);
-    setRemoteStatus(`Deleted \"${removed.name}\".`);
+    setRemoteStatus(`Deleted "${removed.name}".`);
   };
 
   const handleMobileConnectTest = () => {
