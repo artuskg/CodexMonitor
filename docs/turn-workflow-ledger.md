@@ -1,25 +1,22 @@
 # Turn Workflow Ledger
 
 ## Plan
-- Confirm whether mobile backgrounding kills tool calls or only interrupts streamed updates.
+- Push the completed mobile QoL patch set to `artuskg/CodexMonitor`.
 
 ## Doing
-- Preparing a code-grounded answer on iOS background behavior and reconnect semantics.
+- Finalizing commit/push metadata and confirming git state.
 
 ## Done
 - Consulted this ledger before responding this turn.
-- Ran final targeted tests and typecheck after reconnect race patch:
-- `npm run test -- src/features/app/hooks/useRemoteThreadLiveConnection.test.tsx src/features/workspaces/hooks/useWorkspaceRefreshOnFocus.test.tsx src/features/workspaces/hooks/useWorkspaces.test.tsx src/features/app/hooks/useRemoteThreadRefreshOnFocus.test.tsx src/features/app/components/Sidebar.test.tsx`
-- `npm run typecheck`
-- Ran RepoPrompt review vs `main` after latest edits.
-- Inspected lifecycle code paths for background behavior in:
-- `src/features/app/hooks/useRemoteThreadLiveConnection.ts`
-- `src/features/app/hooks/useRemoteThreadRefreshOnFocus.ts`
-- `src/features/workspaces/hooks/useWorkspaceRefreshOnFocus.ts`
-- Verified daemon live subscribe/unsubscribe semantics in `src-tauri/src/bin/codex_monitor_daemon.rs`.
+- Added/updated git remote `artuskg -> https://github.com/artuskg/CodexMonitor.git`.
+- Committed staged changes on `main`:
+- commit `500d94c`
+- message: `Improve remote mobile QoL: add-project, refresh, reconnect, and sidebar activity`
+- Pushed to `artuskg`:
+- `git push artuskg HEAD:main` -> `b6f30a5..500d94c`.
 
 ## Next
-- Decide whether to add a per-thread in-flight subscribe guard to eliminate duplicate same-thread subscribe risk called out in review.
+- Optionally address RepoPrompt follow-up hardening: per-thread in-flight subscribe guard to avoid duplicate same-thread subscriptions under race.
 
 ## Todos
 - Keep this ledger updated every turn.
