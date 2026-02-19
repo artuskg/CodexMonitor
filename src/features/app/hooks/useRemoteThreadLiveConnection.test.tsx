@@ -191,6 +191,50 @@ describe("useRemoteThreadLiveConnection", () => {
     expect(threadLiveSubscribeMock).toHaveBeenCalledTimes(1);
   });
 
+  it("promotes polling state to live on thread activity without heartbeat", async () => {
+    const refreshThread = vi.fn().mockResolvedValue(undefined);
+    const workspace = {
+      id: "ws-1",
+      name: "Workspace",
+      path: "/tmp/ws-1",
+      connected: true,
+      settings: { sidebarCollapsed: false },
+    };
+
+    const { result } = renderHook(() =>
+      useRemoteThreadLiveConnection({
+        backendMode: "remote",
+        activeWorkspace: workspace,
+        activeThreadId: "thread-1",
+        refreshThread,
+      }),
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.connectionState).toBe("polling");
+
+    await act(async () => {
+      for (const listener of appServerListeners) {
+        listener({
+          workspace_id: "ws-1",
+          method: "item/started",
+          params: { threadId: "thread-1" },
+        });
+      }
+      await Promise.resolve();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.connectionState).toBe("live");
+  });
+
   it("cleans up stale reconnect subscribe when sequence advances", async () => {
     let resolveFirstSubscribe: (() => void) | null = null;
     const firstSubscribe = new Promise<void>((resolve) => {

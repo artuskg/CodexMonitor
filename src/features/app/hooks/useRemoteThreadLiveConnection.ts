@@ -329,9 +329,8 @@ export function useRemoteThreadLiveConnection({
       if (threadId !== selectedThreadId) {
         return;
       }
-      if (connectionStateRef.current === "live") {
-        lastThreadEventAtRef.current = Date.now();
-      }
+      lastThreadEventAtRef.current = Date.now();
+      setState("live");
     });
 
     return () => {
