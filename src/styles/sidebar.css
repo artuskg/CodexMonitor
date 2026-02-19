@@ -739,6 +739,20 @@
   min-width: 0;
 }
 
+.workspace-activity-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.workspace-activity-indicator.is-processing {
+  background: #ff9f43;
+  box-shadow: 0 0 10px rgba(255, 159, 67, 0.8);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
 .workspace-toggle {
   border: none;
   background: transparent;

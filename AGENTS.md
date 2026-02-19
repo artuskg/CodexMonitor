@@ -151,3 +151,28 @@ Use extra care in high-churn/high-complexity files:
 - Task-oriented code map: `docs/codebase-map.md`
 - Multi-agent upstream sync runbook: `docs/multi-agent-sync-runbook.md`
 - Setup/build/release/test commands: `README.md`
+
+## Turn Workflow Ledger (Mandatory)
+
+- Maintain a repo-local markdown ledger at `docs/turn-workflow-ledger.md`.
+- Required headings in that file: `Plan`, `Doing`, `Done`, `Next`, `Todos`.
+- Before every response turn, consult `docs/turn-workflow-ledger.md`.
+- At the end of every response turn, update `docs/turn-workflow-ledger.md` to reflect the latest state.
+- Keep entries concise and current-state only.
+
+## Automated Delivery Checklist
+
+- For non-trivial code changes, use RepoPrompt MCP planning workflow before implementing:
+  - Bind RepoPrompt to the target repo workspace.
+  - Run `context_builder` (`response_type: "plan"`) to ground implementation in code context.
+- Add or update regression tests when prudent for each behavior change.
+- Validate touched changes with:
+  - targeted tests first
+  - `npm run typecheck`
+- Before finalizing, run a RepoPrompt review against `main` and address must-fix findings:
+  - `git diff` compare scope vs `main`
+  - `chat_send` review mode with selected changed files.
+
+## Confusion Log
+
+- **2026-02-19:** RepoPrompt MCP was initially reachable but reported “No VCS repository found in loaded roots,” which looked like missing RepoPrompt availability. Confusing because tools existed, but no repo context was bound. Resolution: create/switch to a non-system RepoPrompt workspace, add the repo folder root, then run git/review tools. Rule of thumb: if RepoPrompt git fails with missing repo roots, check workspace/root binding before assuming tool absence.

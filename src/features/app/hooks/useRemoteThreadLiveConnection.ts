@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { subscribeAppServerEvents } from "@services/events";
 import { threadLiveSubscribe, threadLiveUnsubscribe } from "@services/tauri";
+import { pushErrorToast } from "@services/toasts";
 import {
   getAppServerParams,
   getAppServerRawMethod,
@@ -9,6 +10,10 @@ import {
 import type { WorkspaceInfo } from "@/types";
 
 export type RemoteThreadConnectionState = "live" | "polling" | "disconnected";
+
+export const REMOTE_LIVE_STALE_TIMEOUT_MS = 20_000;
+export const REMOTE_LIVE_RECONNECT_INTERVAL_MS = 5_000;
+const REMOTE_RECOVERY_TOAST_COOLDOWN_MS = 30_000;
 
 type ReconnectOptions = {
   runResume?: boolean;
@@ -63,6 +68,13 @@ function isDocumentVisible() {
   return typeof document === "undefined" ? true : document.visibilityState === "visible";
 }
 
+function isWindowFocused() {
+  if (typeof document === "undefined" || typeof document.hasFocus !== "function") {
+    return true;
+  }
+  return document.hasFocus();
+}
+
 export function useRemoteThreadLiveConnection({
   backendMode,
   activeWorkspace,
@@ -90,8 +102,10 @@ export function useRemoteThreadLiveConnection({
   const reconnectWorkspaceRef = useRef(reconnectWorkspace);
   const connectionStateRef = useRef(connectionState);
   const activeSubscriptionKeyRef = useRef<string | null>(null);
+  const desiredSubscriptionKeyRef = useRef<string | null>(null);
   const reconnectSequenceRef = useRef(0);
   const lastThreadEventAtRef = useRef<number>(0);
+  const lastRecoveryToastAtRef = useRef<number>(0);
 
   useEffect(() => {
     backendModeRef.current = backendMode;
@@ -168,6 +182,8 @@ export function useRemoteThreadLiveConnection({
       setState(activeWorkspaceRef.current.connected ? "polling" : "disconnected");
 
       try {
+        const targetKey = keyForThread(workspaceId, threadId);
+        desiredSubscriptionKeyRef.current = targetKey;
         if (
           !activeWorkspaceRef.current.connected &&
           reconnectWorkspaceRef.current &&
@@ -186,12 +202,23 @@ export function useRemoteThreadLiveConnection({
           return false;
         }
 
+        if (activeSubscriptionKeyRef.current === targetKey) {
+          await threadLiveUnsubscribe(workspaceId, threadId).catch(() => {
+            // Best-effort dedupe: ignore unsubscribe failures before reattach.
+          });
+          activeSubscriptionKeyRef.current = null;
+        }
         await threadLiveSubscribe(workspaceId, threadId);
         if (sequence !== reconnectSequenceRef.current) {
+          if (desiredSubscriptionKeyRef.current !== targetKey) {
+            await threadLiveUnsubscribe(workspaceId, threadId).catch(() => {
+              // Best-effort cleanup for stale reconnect attempts.
+            });
+          }
           return false;
         }
 
-        activeSubscriptionKeyRef.current = keyForThread(workspaceId, threadId);
+        activeSubscriptionKeyRef.current = targetKey;
         setState("polling");
         return true;
       } catch {
@@ -210,6 +237,7 @@ export function useRemoteThreadLiveConnection({
       backendMode === "remote" && workspace?.id && activeThreadId
         ? keyForThread(workspace.id, activeThreadId)
         : null;
+    desiredSubscriptionKeyRef.current = nextKey;
     const previousKey = activeSubscriptionKeyRef.current;
 
     if (previousKey && previousKey !== nextKey) {
@@ -276,6 +304,11 @@ export function useRemoteThreadLiveConnection({
         if (threadId === selectedThreadId) {
           activeSubscriptionKeyRef.current = null;
           reconcileDisconnectedState();
+          if (isDocumentVisible() && isWindowFocused()) {
+            void reconnectLive(activeWorkspaceId, selectedThreadId, {
+              runResume: true,
+            });
+          }
         }
         return;
       }
@@ -296,14 +329,63 @@ export function useRemoteThreadLiveConnection({
       if (threadId !== selectedThreadId) {
         return;
       }
-      lastThreadEventAtRef.current = Date.now();
-      setState("live");
+      if (connectionStateRef.current === "live") {
+        lastThreadEventAtRef.current = Date.now();
+      }
     });
 
     return () => {
       unlisten();
     };
   }, [reconnectLive, reconcileDisconnectedState, setState]);
+
+  useEffect(() => {
+    if (backendMode !== "remote") {
+      return;
+    }
+    const timer = setInterval(() => {
+      if (!isDocumentVisible() || !isWindowFocused()) {
+        return;
+      }
+      const workspaceId = activeWorkspaceRef.current?.id ?? null;
+      const threadId = activeThreadIdRef.current;
+      if (!workspaceId || !threadId) {
+        return;
+      }
+      const now = Date.now();
+      const lastEventAt = lastThreadEventAtRef.current;
+      const staleLive =
+        connectionStateRef.current === "live" &&
+        lastEventAt > 0 &&
+        now - lastEventAt >= REMOTE_LIVE_STALE_TIMEOUT_MS;
+      if (!staleLive) {
+        return;
+      }
+      const toastNow = Date.now();
+      if (
+        toastNow - lastRecoveryToastAtRef.current >=
+        REMOTE_RECOVERY_TOAST_COOLDOWN_MS
+      ) {
+        lastRecoveryToastAtRef.current = toastNow;
+        pushErrorToast({
+          title: "Server connection interrupted",
+          message:
+            "Live updates paused (likely daemon restart). Reconnecting automatically.",
+          durationMs: 5000,
+        });
+      }
+      setState("polling");
+      void (async () => {
+        await reconnectLive(workspaceId, threadId, {
+          runResume: true,
+        });
+      })();
+    }, REMOTE_LIVE_RECONNECT_INTERVAL_MS);
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, [backendMode, reconnectLive, setState]);
 
   useEffect(() => {
     let unlistenWindowFocus: (() => void) | null = null;
@@ -327,6 +409,8 @@ export function useRemoteThreadLiveConnection({
     };
 
     const handleBlur = () => {
+      reconnectSequenceRef.current += 1;
+      desiredSubscriptionKeyRef.current = null;
       const currentKey = activeSubscriptionKeyRef.current;
       if (!currentKey) {
         return;
@@ -389,6 +473,7 @@ export function useRemoteThreadLiveConnection({
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("blur", handleBlur);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      desiredSubscriptionKeyRef.current = null;
       const currentKey = activeSubscriptionKeyRef.current;
       if (currentKey) {
         activeSubscriptionKeyRef.current = null;

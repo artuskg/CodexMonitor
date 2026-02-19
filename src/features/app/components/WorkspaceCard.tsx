@@ -9,6 +9,7 @@ type WorkspaceCardProps = {
   isCollapsed: boolean;
   addMenuOpen: boolean;
   addMenuWidth: number;
+  hasProcessingActivity?: boolean;
   onSelectWorkspace: (id: string) => void;
   onShowWorkspaceMenu: (event: MouseEvent, workspaceId: string) => void;
   onToggleWorkspaceCollapse: (workspaceId: string, collapsed: boolean) => void;
@@ -29,6 +30,7 @@ export function WorkspaceCard({
   isCollapsed,
   addMenuOpen,
   addMenuWidth,
+  hasProcessingActivity = false,
   onSelectWorkspace,
   onShowWorkspaceMenu,
   onToggleWorkspaceCollapse,
@@ -57,6 +59,13 @@ export function WorkspaceCard({
           <div className="workspace-name-row">
             <div className="workspace-title">
               <span className="workspace-name">{workspaceName ?? workspace.name}</span>
+              {hasProcessingActivity && (
+                <span
+                  className="workspace-activity-indicator is-processing"
+                  aria-hidden
+                  title="Streaming updates in progress"
+                />
+              )}
               <button
                 className={`workspace-toggle ${isCollapsed ? "" : "expanded"}`}
                 onClick={(event) => {
