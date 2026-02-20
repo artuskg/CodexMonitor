@@ -68,7 +68,7 @@ describe("useRemoteThreadLiveConnection", () => {
     vi.useRealTimers();
   });
 
-  it("reconnects when live stream goes stale after daemon interruption", async () => {
+  it("does not reconnect during normal idle period without detach signal", async () => {
     const refreshThread = vi.fn().mockResolvedValue(undefined);
 
     renderHook(() =>
@@ -110,9 +110,10 @@ describe("useRemoteThreadLiveConnection", () => {
       await Promise.resolve();
     });
 
-    expect(threadLiveSubscribeMock.mock.calls.length).toBeGreaterThanOrEqual(2);
-    expect(threadLiveUnsubscribeMock.mock.calls.length).toBeGreaterThanOrEqual(1);
-    expect(refreshThread.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(threadLiveSubscribeMock).toHaveBeenCalledTimes(1);
+    expect(threadLiveUnsubscribeMock).toHaveBeenCalledTimes(0);
+    expect(refreshThread).toHaveBeenCalledTimes(1);
+    expect(pushErrorToastMock).not.toHaveBeenCalled();
   });
 
   it("reconnects when thread live stream detaches while visible", async () => {

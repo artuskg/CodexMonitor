@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { subscribeAppServerEvents } from "@services/events";
 import { threadLiveSubscribe, threadLiveUnsubscribe } from "@services/tauri";
-import { pushErrorToast } from "@services/toasts";
 import {
   getAppServerParams,
   getAppServerRawMethod,
@@ -11,9 +10,6 @@ import type { WorkspaceInfo } from "@/types";
 
 export type RemoteThreadConnectionState = "live" | "polling" | "disconnected";
 
-export const REMOTE_LIVE_STALE_TIMEOUT_MS = 20_000;
-export const REMOTE_LIVE_RECONNECT_INTERVAL_MS = 5_000;
-const REMOTE_RECOVERY_TOAST_COOLDOWN_MS = 30_000;
 const SELF_DETACH_IGNORE_WINDOW_MS = 10_000;
 
 type ReconnectOptions = {
@@ -113,8 +109,6 @@ export function useRemoteThreadLiveConnection({
     promise: Promise<boolean>;
   } | null>(null);
   const reconnectSequenceRef = useRef(0);
-  const lastThreadEventAtRef = useRef<number>(0);
-  const lastRecoveryToastAtRef = useRef<number>(0);
 
   useEffect(() => {
     backendModeRef.current = backendMode;
@@ -374,7 +368,6 @@ export function useRemoteThreadLiveConnection({
       if (method === "thread/live_heartbeat") {
         const threadId = extractThreadId(method, params);
         if (threadId === selectedThreadId) {
-          lastThreadEventAtRef.current = Date.now();
           setState("live");
         }
         return;
@@ -387,7 +380,6 @@ export function useRemoteThreadLiveConnection({
       if (threadId !== selectedThreadId) {
         return;
       }
-      lastThreadEventAtRef.current = Date.now();
       setState("live");
     });
 
@@ -395,54 +387,6 @@ export function useRemoteThreadLiveConnection({
       unlisten();
     };
   }, [reconnectLive, reconcileDisconnectedState, setState]);
-
-  useEffect(() => {
-    if (backendMode !== "remote") {
-      return;
-    }
-    const timer = setInterval(() => {
-      if (!isDocumentVisible() || !isWindowFocused()) {
-        return;
-      }
-      const workspaceId = activeWorkspaceRef.current?.id ?? null;
-      const threadId = activeThreadIdRef.current;
-      if (!workspaceId || !threadId) {
-        return;
-      }
-      const now = Date.now();
-      const lastEventAt = lastThreadEventAtRef.current;
-      const staleLive =
-        connectionStateRef.current === "live" &&
-        lastEventAt > 0 &&
-        now - lastEventAt >= REMOTE_LIVE_STALE_TIMEOUT_MS;
-      if (!staleLive) {
-        return;
-      }
-      const toastNow = Date.now();
-      if (
-        toastNow - lastRecoveryToastAtRef.current >=
-        REMOTE_RECOVERY_TOAST_COOLDOWN_MS
-      ) {
-        lastRecoveryToastAtRef.current = toastNow;
-        pushErrorToast({
-          title: "Server connection interrupted",
-          message:
-            "Live updates paused (likely daemon restart). Reconnecting automatically.",
-          durationMs: 5000,
-        });
-      }
-      setState("polling");
-      void (async () => {
-        await reconnectLive(workspaceId, threadId, {
-          runResume: true,
-        });
-      })();
-    }, REMOTE_LIVE_RECONNECT_INTERVAL_MS);
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, [backendMode, reconnectLive, setState]);
 
   useEffect(() => {
     let unlistenWindowFocus: (() => void) | null = null;
