@@ -243,7 +243,7 @@ describe("Sidebar", () => {
     expect(onSelectWorkspace).toHaveBeenCalledWith("ws-1");
   });
 
-  it("shows a workspace activity indicator when a thread is processing", () => {
+  it("does not show a workspace activity indicator when a thread is processing", () => {
     render(
       <Sidebar
         {...baseProps}
@@ -286,8 +286,7 @@ describe("Sidebar", () => {
       />,
     );
 
-    const indicator = screen.getByTitle("Streaming updates in progress");
-    expect(indicator.className).toContain("workspace-activity-indicator");
-    expect(indicator.className).toContain("is-processing");
+    const indicator = screen.queryByTitle("Streaming updates in progress");
+    expect(indicator).toBeNull();
   });
 });

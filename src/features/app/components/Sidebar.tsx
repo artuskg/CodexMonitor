@@ -556,13 +556,6 @@ export const Sidebar = memo(function Sidebar({
                     isLoadingThreads && threads.length === 0;
                   const isPaging = threadListPagingByWorkspace[entry.id] ?? false;
                   const worktrees = worktreesByParent.get(entry.id) ?? [];
-                  const workspaceIdsWithChildren = [entry.id, ...worktrees.map((child) => child.id)];
-                  const hasProcessingActivity = workspaceIdsWithChildren.some((workspaceId) => {
-                    const workspaceThreads = threadsByWorkspace[workspaceId] ?? [];
-                    return workspaceThreads.some(
-                      (thread) => threadStatusById[thread.id]?.isProcessing,
-                    );
-                  });
                   const addMenuOpen = addMenuAnchor?.workspaceId === entry.id;
                   const isDraftNewAgent = newAgentDraftWorkspaceId === entry.id;
                   const isDraftRowActive =
@@ -583,7 +576,6 @@ export const Sidebar = memo(function Sidebar({
                       isCollapsed={isCollapsed}
                       addMenuOpen={addMenuOpen}
                       addMenuWidth={ADD_MENU_WIDTH}
-                      hasProcessingActivity={hasProcessingActivity}
                       onSelectWorkspace={onSelectWorkspace}
                       onShowWorkspaceMenu={showWorkspaceMenu}
                       onToggleWorkspaceCollapse={onToggleWorkspaceCollapse}
