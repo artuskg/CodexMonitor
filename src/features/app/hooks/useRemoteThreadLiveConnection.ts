@@ -107,9 +107,11 @@ export function useRemoteThreadLiveConnection({
   const activeSubscriptionKeyRef = useRef<string | null>(null);
   const desiredSubscriptionKeyRef = useRef<string | null>(null);
   const ignoreDetachedEventsUntilRef = useRef<Map<string, number>>(new Map());
-  const inFlightReconnectRef = useRef<{ key: string; promise: Promise<boolean> } | null>(
-    null,
-  );
+  const inFlightReconnectRef = useRef<{
+    key: string;
+    sequence: number;
+    promise: Promise<boolean>;
+  } | null>(null);
   const reconnectSequenceRef = useRef(0);
   const lastThreadEventAtRef = useRef<number>(0);
   const lastRecoveryToastAtRef = useRef<number>(0);
@@ -186,8 +188,13 @@ export function useRemoteThreadLiveConnection({
 
       const targetKey = keyForThread(workspaceId, threadId);
       desiredSubscriptionKeyRef.current = targetKey;
-      if (inFlightReconnectRef.current?.key === targetKey) {
-        return inFlightReconnectRef.current.promise;
+      const inFlightReconnect = inFlightReconnectRef.current;
+      if (inFlightReconnect?.key === targetKey) {
+        if (inFlightReconnect.sequence === reconnectSequenceRef.current) {
+          return inFlightReconnect.promise;
+        }
+        // A newer sequence (blur/focus/key change) has invalidated this attempt.
+        inFlightReconnectRef.current = null;
       }
 
       const reconnectPromise = (async (): Promise<boolean> => {
@@ -249,7 +256,12 @@ export function useRemoteThreadLiveConnection({
         }
       })();
 
-      inFlightReconnectRef.current = { key: targetKey, promise: reconnectPromise };
+      const reconnectSequence = reconnectSequenceRef.current;
+      inFlightReconnectRef.current = {
+        key: targetKey,
+        sequence: reconnectSequence,
+        promise: reconnectPromise,
+      };
       reconnectPromise.finally(() => {
         if (inFlightReconnectRef.current?.promise === reconnectPromise) {
           inFlightReconnectRef.current = null;

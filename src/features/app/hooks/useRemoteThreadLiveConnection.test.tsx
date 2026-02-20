@@ -375,6 +375,65 @@ describe("useRemoteThreadLiveConnection", () => {
     expect(threadLiveUnsubscribeMock).toHaveBeenCalledWith("ws-1", "thread-1");
   });
 
+  it("starts a fresh reconnect after blur cancels same-key in-flight attempt", async () => {
+    let resolveFirstSubscribe: (() => void) | null = null;
+    const firstSubscribe = new Promise<void>((resolve) => {
+      resolveFirstSubscribe = resolve;
+    });
+    threadLiveSubscribeMock
+      .mockImplementationOnce(() => firstSubscribe)
+      .mockResolvedValue(undefined);
+    const refreshThread = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() =>
+      useRemoteThreadLiveConnection({
+        backendMode: "remote",
+        activeWorkspace: {
+          id: "ws-1",
+          name: "Workspace",
+          path: "/tmp/ws-1",
+          connected: true,
+          settings: { sidebarCollapsed: false },
+        },
+        activeThreadId: null,
+        refreshThread,
+      }),
+    );
+
+    let firstReconnectPromise: Promise<boolean> = Promise.resolve(false);
+    await act(async () => {
+      firstReconnectPromise = result.current.reconnectLive("ws-1", "thread-1", {
+        runResume: false,
+      });
+      await Promise.resolve();
+    });
+    expect(threadLiveSubscribeMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      window.dispatchEvent(new Event("blur"));
+      await Promise.resolve();
+    });
+
+    let secondReconnectPromise: Promise<boolean> = Promise.resolve(false);
+    await act(async () => {
+      secondReconnectPromise = result.current.reconnectLive("ws-1", "thread-1", {
+        runResume: false,
+      });
+      await Promise.resolve();
+    });
+    expect(threadLiveSubscribeMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await expect(secondReconnectPromise).resolves.toBe(true);
+    });
+
+    await act(async () => {
+      resolveFirstSubscribe?.();
+      await expect(firstReconnectPromise).resolves.toBe(false);
+      await Promise.resolve();
+    });
+  });
+
   it("does not reconnect when workspace object identity changes but key is unchanged", async () => {
     const refreshThread = vi.fn().mockResolvedValue(undefined);
     const firstWorkspace = {
